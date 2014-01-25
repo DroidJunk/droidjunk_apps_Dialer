@@ -27,10 +27,12 @@ import android.app.FragmentTransaction;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.ServiceManager;
+import android.preference.PreferenceManager;
 import android.provider.CallLog.Calls;
 import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Intents;
@@ -44,10 +46,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnFocusChangeListener;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 
@@ -59,6 +61,7 @@ import com.android.contacts.common.list.OnPhoneNumberPickerActionListener;
 import com.android.dialer.calllog.CallLogActivity;
 import com.android.dialer.database.DialerDatabaseHelper;
 import com.android.dialer.dialpad.DialpadFragment;
+import com.android.dialer.dialpad.DialpadKeyButton;
 import com.android.dialer.dialpad.SmartDialNameMatcher;
 import com.android.dialer.dialpad.SmartDialPrefix;
 import com.android.dialer.interactions.PhoneNumberInteraction;
@@ -68,6 +71,7 @@ import com.android.dialer.list.PhoneFavoriteFragment;
 import com.android.dialer.list.RegularSearchFragment;
 import com.android.dialer.list.SearchFragment;
 import com.android.dialer.list.SmartDialSearchFragment;
+import com.android.dialer.util.ColorFilterMaker;
 import com.android.dialerbind.DatabaseHelperManager;
 import com.android.internal.telephony.ITelephony;
 
@@ -81,6 +85,16 @@ public class DialtactsActivity extends TransactionSafeActivity implements View.O
         OnListFragmentScrolledListener,
         DialpadFragment.OnDialpadFragmentStartedListener,
         PhoneFavoriteFragment.OnShowAllContactsListener {
+	
+	// JUNK
+	public static SharedPreferences sp;
+	public static boolean redrawDialpad = false;
+	
+	public static void GetPrefs(Context context) { 
+		sp = PreferenceManager.getDefaultSharedPreferences(context);
+	}
+	// END JUNK
+	
     private static final String TAG = "DialtactsActivity";
 
     public static final boolean DEBUG = false;
@@ -115,7 +129,7 @@ public class DialtactsActivity extends TransactionSafeActivity implements View.O
     private static final int ACTIVITY_REQUEST_CODE_VOICE_SEARCH = 1;
 
     private String mFilterText;
-
+    
     /**
      * The main fragment displaying the user's favorites and frequent contacts
      */
@@ -145,7 +159,7 @@ public class DialtactsActivity extends TransactionSafeActivity implements View.O
     private View mBottomPaddingView;
     private View mFragmentsFrame;
     private View mActionBar;
-
+    
     private boolean mInDialpadSearch;
     private boolean mInRegularSearch;
     private boolean mClearSearchOnPause;
@@ -304,6 +318,7 @@ public class DialtactsActivity extends TransactionSafeActivity implements View.O
         mBottomPaddingView = findViewById(R.id.dialtacts_bottom_padding);
         mFragmentsFrame = findViewById(R.id.dialtacts_frame);
         mActionBar = findViewById(R.id.fake_action_bar);
+        
         prepareSearchView();
 
         if (UI.FILTER_CONTACTS_ACTION.equals(intent.getAction())
@@ -315,6 +330,7 @@ public class DialtactsActivity extends TransactionSafeActivity implements View.O
 
         mDialerDatabaseHelper = DatabaseHelperManager.getDatabaseHelper(this);
         SmartDialPrefix.initializeNanpSettings(this);
+
     }
 
     @Override
@@ -400,6 +416,13 @@ public class DialtactsActivity extends TransactionSafeActivity implements View.O
             case R.id.menu_all_contacts:
                 onShowAllContacts();
                 return true;
+            // JUNK
+            case R.id.menu_dailer_colors:
+            	Intent intent = new Intent(this, DailerColorPreferenceActivity.class);
+            	//intent.putExtra( PreferenceActivity.EXTRA_SHOW_FRAGMENT, DailerColorPreferenceActivity.class.getName() );
+                startActivity(intent);
+                return true;
+           // END JUNK                
         }
         return false;
     }
@@ -426,7 +449,7 @@ public class DialtactsActivity extends TransactionSafeActivity implements View.O
                 // show the dialpad because the user has explicitly clicked the dialpad
                 // button.
                 mInCallDialpadUp = false;
-                showDialpadFragment(true);
+                showDialpadFragment(false);
                 break;
             case R.id.call_history_on_dialpad_button:
             case R.id.call_history_button:
@@ -473,8 +496,17 @@ public class DialtactsActivity extends TransactionSafeActivity implements View.O
     }
 
     private void showDialpadFragment(boolean animate) {
+    	
+    	
         mDialpadFragment.setAdjustTranslationForAnimation(animate);
         final FragmentTransaction ft = getFragmentManager().beginTransaction();
+        // JUNK
+        if (redrawDialpad) {
+        	ft.detach(mDialpadFragment);
+        	ft.attach(mDialpadFragment);
+        	redrawDialpad = false;
+        }
+        // END JUNK
         if (animate) {
             ft.setCustomAnimations(R.anim.slide_in, 0);
         } else {
@@ -482,6 +514,7 @@ public class DialtactsActivity extends TransactionSafeActivity implements View.O
         }
         ft.show(mDialpadFragment);
         ft.commit();
+
     }
 
     public void hideDialpadFragment(boolean animate, boolean clearDialpad) {

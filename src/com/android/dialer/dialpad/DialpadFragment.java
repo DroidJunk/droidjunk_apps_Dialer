@@ -36,11 +36,10 @@ import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemProperties;
-import android.provider.ContactsContract.Contacts;
+import android.preference.PreferenceManager;
 import android.provider.Contacts.People;
 import android.provider.Contacts.Phones;
 import android.provider.Contacts.PhonesColumns;
-import android.provider.ContactsContract.Intents;
 import android.provider.Settings;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.PhoneStateListener;
@@ -51,17 +50,14 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.RelativeSizeSpan;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.ViewTreeObserver.OnPreDrawListener;
@@ -77,18 +73,16 @@ import android.widget.TextView;
 
 import com.android.contacts.common.CallUtil;
 import com.android.contacts.common.GeoUtil;
-import com.android.contacts.common.activity.TransactionSafeActivity;
 import com.android.contacts.common.preference.ContactsPreferences;
 import com.android.contacts.common.util.PhoneNumberFormatter;
 import com.android.contacts.common.util.StopWatch;
+import com.android.dialer.DailerColorPreferenceActivity;
 import com.android.dialer.NeededForReflection;
 import com.android.dialer.DialtactsActivity;
 import com.android.dialer.R;
 import com.android.dialer.SpecialCharSequenceMgr;
-import com.android.dialer.database.DialerDatabaseHelper;
-import com.android.dialer.interactions.PhoneNumberInteraction;
-import com.android.dialer.util.OrientationUtil;
 import com.android.internal.telephony.ITelephony;
+import com.android.dialer.util.ColorFilterMaker;
 import com.android.phone.common.CallLogAsync;
 import com.android.phone.common.HapticFeedback;
 import com.google.common.annotations.VisibleForTesting;
@@ -110,6 +104,7 @@ public class DialpadFragment extends Fragment
         public void onDialpadFragmentStarted();
     }
 
+    
     /**
      * LinearLayout with getter and setter methods for the translationY property using floats,
      * for animation purposes.
@@ -196,7 +191,7 @@ public class DialpadFragment extends Fragment
      * View (usually FrameLayout) containing mDigits field. This can be null, in which mDigits
      * isn't enclosed by the container.
      */
-    private View mDigitsContainer;
+    public static View mDigitsContainer;
     private EditText mDigits;
 
     /** Remembers if we need to clear digits field when the screen is completely gone. */
@@ -206,6 +201,8 @@ public class DialpadFragment extends Fragment
     private ToneGenerator mToneGenerator;
     private final Object mToneGeneratorLock = new Object();
     private View mDialpad;
+
+    
     /**
      * Set of dialpad keys that are currently being pressed
      */
@@ -437,6 +434,7 @@ public class DialpadFragment extends Fragment
             mDigits.setCursorVisible(false);
         }
 
+        
         // Set up the "dialpad chooser" UI; see showDialpadChooser().
         mDialpadChooser = (ListView) fragmentView.findViewById(R.id.dialpadChooser);
         mDialpadChooser.setOnItemClickListener(this);
@@ -609,7 +607,8 @@ public class DialpadFragment extends Fragment
             afterTextChanged(digits);
         }
     }
-
+    
+    
     private void setupKeypad(View fragmentView) {
         final int[] buttonIds = new int[] {R.id.zero, R.id.one, R.id.two, R.id.three, R.id.four,
                 R.id.five, R.id.six, R.id.seven, R.id.eight, R.id.nine, R.id.star, R.id.pound};
@@ -627,11 +626,22 @@ public class DialpadFragment extends Fragment
                 R.string.dialpad_star_letters, R.string.dialpad_pound_letters};
 
         final Resources resources = getResources();
-
+        
         DialpadKeyButton dialpadKey;
         TextView numberView;
         TextView lettersView;
+        // JUNK
+        ImageView mVMicon;
+        ImageView mHistoryIcon;
+        ImageView mCallButton;
+        ImageView mOverflowIcon;
+        // END JUNK
 
+        // JUNK
+        DialtactsActivity.GetPrefs(getActivity().getBaseContext());
+        // END JUNK
+        
+        
         for (int i = 0; i < buttonIds.length; i++) {
             dialpadKey = (DialpadKeyButton) fragmentView.findViewById(buttonIds[i]);
             dialpadKey.setLayoutParams(new TableRow.LayoutParams(
@@ -643,14 +653,42 @@ public class DialpadFragment extends Fragment
             numberView.setText(numberString);
             dialpadKey.setContentDescription(numberString);
             if (lettersView != null) {
-                lettersView.setText(resources.getString(letterIds[i]));
+            	// JUNK
+            	lettersView.setTextColor(DialtactsActivity.sp.getInt(DailerColorPreferenceActivity.DIALER_TEXT_COLOR, 0xffffffff));
+            	// END JUNK
+            	lettersView.setText(resources.getString(letterIds[i]));
                 if (buttonIds[i] == R.id.zero) {
                     lettersView.setTextSize(TypedValue.COMPLEX_UNIT_PX, resources.getDimension(
                             R.dimen.dialpad_key_plus_size));
                 }
             }
+            // JUNK
+            
+            mDialButtonContainer.setBackgroundColor(DialtactsActivity.sp.getInt(DailerColorPreferenceActivity.DIALER_BUTTON_BG_COLOR, 0xff000000));
+            dialpadKey.setBackgroundColor(DialtactsActivity.sp.getInt(DailerColorPreferenceActivity.DIALER_BUTTON_BG_COLOR, 0xff000000));
+            numberView.setTextColor(DialtactsActivity.sp.getInt(DailerColorPreferenceActivity.DIALER_DIGIT_COLOR, 0xffffffff));
+            mVMicon = (ImageView) dialpadKey.findViewById(R.id.dialpad_key_voicemail);
+            if (mVMicon != null ) {
+            mVMicon.setColorFilter(ColorFilterMaker.changeColorAlpha(
+            		DialtactsActivity.sp.getInt(DailerColorPreferenceActivity.DIALER_TEXT_COLOR, 0xffffffff), .32f,0f));
+            }
+            // END JUNK
+            
         }
-
+        // JUNK
+        
+        mHistoryIcon = (ImageView) mDialButtonContainer.findViewById(R.id.call_history_on_dialpad_button);
+        mCallButton = (ImageView) mDialButtonContainer.findViewById(R.id.dialButton);
+        mOverflowIcon = (ImageView) mDialButtonContainer.findViewById(R.id.overflow_menu_on_dialpad);
+        mHistoryIcon.setColorFilter(ColorFilterMaker.changeColorAlpha(
+        		DialtactsActivity.sp.getInt(DailerColorPreferenceActivity.DIALER_ACTIONBAR_ICON, 0xffffffff), .32f,0f));
+        mCallButton.setColorFilter(ColorFilterMaker.changeColorAlpha(
+        		DialtactsActivity.sp.getInt(DailerColorPreferenceActivity.DIALER_ACTIONBAR_ICON, 0xffffffff), .32f,0f));
+        mOverflowIcon.setColorFilter(ColorFilterMaker.changeColorAlpha(
+        		DialtactsActivity.sp.getInt(DailerColorPreferenceActivity.DIALER_ACTIONBAR_ICON, 0xffffffff), .32f,0f));
+        
+        // END JUNK
+        
         // Long-pressing one button will initiate Voicemail.
         fragmentView.findViewById(R.id.one).setOnLongClickListener(this);
 

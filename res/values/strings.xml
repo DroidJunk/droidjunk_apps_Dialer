@@ -635,4 +635,19 @@
 
     <!-- Content description for dismiss button on badge. [CHAR LIMIT=NONE] -->
     <string name="description_dismiss">Dismiss</string>
+    
+    <!-- JUNK -->
+    <string name="dialer_colors">Colors</string>
+    
+         <!-- ColorPicker -->  
+        <string name="set">Set</string>   
+    	<string name="dialog_color_picker">Color Picker</string>
+    	<string name="press_color_to_apply">Press on Color to apply</string>  
+    	<string name="hex">Hex:</string>
+    	<string name="hex_hint">#FF000000</string>
+		<string name="ics_color">Junk</string>
+    	<string name="arrow_right">→</string> 
+    	<string name="arrow_down">↓</string>
+    
+     <!-- END JUNK -->
 </resources>

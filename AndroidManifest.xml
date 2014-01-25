@@ -291,6 +291,15 @@
                 <action android:name="com.android.incallui.ACTION_HANG_UP_ONGOING_CALL" />
             </intent-filter>
         </receiver>
-
+        
+        <!-- JUNK -->
+        <activity android:name="com.android.dialer.DailerColorPreferenceActivity"
+            android:label="@string/dialer_colors"
+            android:screenOrientation="portrait">
+        </activity>
+        <!-- END JUNK -->
+        
+        
+        
     </application>
 </manifest>
